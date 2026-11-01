@@ -63,6 +63,11 @@ select option{background:var(--surface)}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .stat .l{color:var(--muted);font-size:.82rem}.stat .v{font-weight:700;font-size:1.2rem;white-space:nowrap}.stat .v small{font-size:.75rem;color:var(--muted);font-weight:400}
+.stat-split{display:flex;flex-direction:column;gap:7px;width:100%;margin-top:2px}
+.stat-split>div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;min-width:0}
+.stat-split .sl{color:var(--muted);font-size:.78rem;flex:none}
+.stat-split .sv{font-weight:700;font-size:.98rem;white-space:nowrap;text-align:left}
+
 .donut-wrap{display:grid;place-items:center;flex:1;padding:6px}
 .donut{width:100%;max-width:300px;aspect-ratio:1}
 .legend{display:flex;flex-direction:column;gap:8px;flex:1}
@@ -195,8 +200,14 @@ select option{background:var(--surface)}
 <section id="tab-report" class="pane">
   <div class="stats">
     <div class="stat"><span class="l">کل درآمدها</span><span class="v" style="color:var(--ok)" id="totalIncomeVal"></span></div>
-    <div class="stat"><span class="l">مخارج ثابت</span><span class="v" style="color:var(--bad)" id="totalFixedVal"></span></div>
-    <div class="stat"><span class="l">مخارج متغیر</span><span class="v" style="color:var(--warn)" id="totalWeeklyVal"></span></div>
+    <div class="stat">
+      <span class="l">تفکیک مخارج</span>
+      <div class="stat-split">
+        <div><span class="sl">ثابت</span><span class="sv" style="color:var(--bad)" id="totalFixedVal"></span></div>
+        <div><span class="sl">متغیر</span><span class="sv" style="color:var(--warn)" id="totalWeeklyVal"></span></div>
+      </div>
+    </div>
+    <div class="stat"><span class="l">جمع کل مخارج</span><span class="v" style="color:var(--bad)" id="totalExpensesVal"></span></div>
     <div class="stat"><span class="l">مانده</span><span class="v" id="balanceVal"></span></div>
   </div>
   <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
@@ -1056,7 +1067,7 @@ function render(){
  const allW=[].concat(...Object.values(m.weeklyExpenses));
  const tI=sum(m.incomes),tF=sum(m.fixedExpenses),tW=sum(allW),tE=tF+tW,bal=tI-tE;
  const t=(id,v)=>$(id).innerHTML=`${fmt(v)} <small>تومان</small>`;
- t('totalIncomeVal',tI);t('totalFixedVal',tF);t('totalWeeklyVal',tW);t('balanceVal',bal);
+ t('totalIncomeVal',tI);t('totalFixedVal',tF);t('totalWeeklyVal',tW);t('totalExpensesVal',tE);t('balanceVal',bal);
  $('balanceVal').style.color=bal>=0?'var(--ok)':'var(--bad)';
  const mi=merge(m.incomes),mf=merge(m.fixedExpenses),mw=merge(allW),fin=merge(m.fixedExpenses.concat(allW));
  fill('reportIncomeList',mi,'income',null,'درآمدی وجود ندارد');
