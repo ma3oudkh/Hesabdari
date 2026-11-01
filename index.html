@@ -113,13 +113,6 @@ select option{background:var(--surface)}
 .hidden{display:none!important}
 .field-label{font-size:.78rem;color:var(--muted);margin-bottom:2px}
 </style>
-
-
-<meta name="theme-color" content="#121820">
-<meta name="description" content="نرم‌افزار حسابداری شخصی برای ثبت درآمد، هزینه و پس‌انداز">
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
-<link rel="apple-touch-icon" href="./icons/icon-192.png">
 </head>
 <body>
 <div class="app">
@@ -241,6 +234,43 @@ select option{background:var(--surface)}
       </div>
       <button class="btn" style="min-width:180px" onclick="pollPrices()">به‌روزرسانی قیمت‌ها</button>
     </div>
+  </div>
+
+  <div class="card" id="ayarCalcCard">
+    <div class="card-h"><div class="t"><div class="dot" style="background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)"><svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>ماشین حساب عیار</div></div>
+    <div class="form-sav" style="align-items:end">
+      <div>
+        <div class="field-label">مقدار</div>
+        <input type="text" inputmode="decimal" class="amt" id="ayarAmount" placeholder="مثلاً ۱۰" oninput="calcAyarConvert()">
+      </div>
+      <div>
+        <div class="field-label">واحد</div>
+        <select id="ayarUnit" onchange="calcAyarConvert()">
+          <option value="gram">گرم</option>
+          <option value="sot">سوت</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label">از عیار</div>
+        <select id="ayarFrom" onchange="calcAyarConvert()">
+          <option value="750">۷۵۰ (۱۸ عیار)</option>
+          <option value="900">۹۰۰</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label">به عیار</div>
+        <select id="ayarTo" onchange="calcAyarConvert()">
+          <option value="900">۹۰۰</option>
+          <option value="750">۷۵۰ (۱۸ عیار)</option>
+        </select>
+      </div>
+      <button class="btn ghost" type="button" onclick="swapAyarDirection()" title="جابه‌جایی">⇄</button>
+    </div>
+    <div class="total" style="margin-top:4px">
+      <span>نتیجه تبدیل</span>
+      <b id="ayarResult">—</b>
+    </div>
+    <div style="color:var(--muted);font-size:.78rem;line-height:1.5">بر اساس مقدار طلای خالص: وزن × (عیار مبدأ ÷ عیار مقصد)</div>
   </div>
 
   <div class="card">
@@ -746,14 +776,12 @@ async function init(){
   updateLiveClock();
   setInterval(updateLiveClock,1000);
   initInvest();renderYears();renderMonths();renderWeeks();onSavTypeChange();render();showCachedPrices();schedulePrices();
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollPrices(true)});
  document.querySelectorAll('.amt').forEach(el=>el.addEventListener('input',()=>{const raw=toEn(el.value);const d=raw.replace(/[^\d.]/g,'');if(!d){el.value='';return}const parts=d.split('.');const intp=parts[0]?groupDigits(parts[0]):'';el.value=parts.length>1?intp+'.'+parts[1].slice(0,4):intp}));
  $('newYearInput').addEventListener('keydown',e=>{if(e.key==='Enter')confirmYear();if(e.key==='Escape')closeYearModal()})}
 function switchTab(t){const ids=['entry','report','chart','invest'];
  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',ids[i]===t));
  ids.forEach(id=>$('tab-'+id).classList.toggle('active',id===t));
  if(t==='invest')renderAssets();
- pollPrices(true);
 }
 function renderYears(){const s=$('yearSelect');s.innerHTML='';
  data.years.sort((a,b)=>a-b).forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;if(y==data.selectedYear)o.selected=true;s.appendChild(o)});
@@ -1177,9 +1205,37 @@ async function pollPrices(silent){
  inFlight=false;
 }
 
+
+function calcAyarConvert(){
+  const amountEl=$('ayarAmount'), resEl=$('ayarResult');
+  if(!amountEl||!resEl)return;
+  const raw=parseFloat(toEn(amountEl.value).replace(/,/g,'').replace(/[^\d.]/g,''));
+  if(!raw||raw<=0){resEl.textContent='—';return}
+  const from=parseInt(($('ayarFrom')&&$('ayarFrom').value)||'750',10);
+  const to=parseInt(($('ayarTo')&&$('ayarTo').value)||'900',10);
+  const unit=($('ayarUnit')&&$('ayarUnit').value)||'gram';
+  if(from===to){
+    const u=unit==='sot'?'سوت':'گرم';
+    resEl.textContent=fmtDec(raw, unit==='sot'?0:4)+' '+u+' (همان عیار)';
+    return;
+  }
+  // وزن مقصد = وزن مبدأ × (عیار مبدأ / عیار مقصد)
+  const converted=raw*(from/to);
+  const uLabel=unit==='sot'?'سوت':'گرم';
+  const fromL=from===750?'۷۵۰':'۹۰۰';
+  const toL=to===750?'۷۵۰':'۹۰۰';
+  resEl.textContent=fmtDec(converted, unit==='sot'?1:4)+' '+uLabel+' · عیار '+toL;
+}
+function swapAyarDirection(){
+  const a=$('ayarFrom'), b=$('ayarTo');
+  if(!a||!b)return;
+  const t=a.value; a.value=b.value; b.value=t;
+  calcAyarConvert();
+}
+
 function schedulePrices(){
   if(typeof priceTimer!=='undefined'&&priceTimer){clearInterval(priceTimer);priceTimer=null}
-  priceTimer=setInterval(()=>{if(!document.hidden)pollPrices(true)},5000);
+  priceTimer=setInterval(()=>{if(!document.hidden)pollPrices(true)},60000);
   pollPrices(false);
 }
 function showCachedPrices(){
@@ -1274,14 +1330,5 @@ function uploadBackup(input){
   reader.readAsText(input.files[0],'utf-8');
 }
 init();</script>
-
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .catch(err => console.error('ثبت Service Worker ناموفق بود:', err));
-  });
-}
-</script>
 </body>
 </html>
