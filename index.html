@@ -45,6 +45,19 @@ select option{background:var(--surface)}
 .form-sav > div,.form-sav > button{min-width:0}
 .form-sav input,.form-sav select,.form-sav button{width:100%;max-width:100%}
 .form-sav .btn{white-space:nowrap}
+
+.form-exp{display:grid;grid-template-columns:1.15fr 1fr .85fr auto;gap:8px;align-items:center}
+.form-exp input,.form-exp button{min-width:0;width:100%}
+.exp-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.exp-tags:empty{display:none}
+.exp-tag{font-size:.72rem;padding:4px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);cursor:pointer;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3}
+.exp-tag:hover{border-color:var(--a1);color:var(--a1)}
+.row .n .note-sub{display:block;font-size:.75rem;color:var(--muted);font-weight:400;margin-top:2px;line-height:1.35;overflow-wrap:anywhere;word-break:break-word}
+@media(max-width:620px){
+  .form-exp{grid-template-columns:1fr 1fr}
+  .form-exp .btn{grid-column:1/-1}
+}
+
 .list{list-style:none;display:flex;flex-direction:column;gap:8px;flex:1;min-height:120px;max-height:280px;overflow-y:auto}
 .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:start;background:var(--surface2);border:1px solid var(--line);border-right:4px solid var(--a1);border-radius:10px;padding:10px 12px;font-size:.88rem;min-width:0}
 .row .n{grid-column:1;min-width:0;overflow-wrap:anywhere;word-break:break-word;line-height:1.45;white-space:normal}
@@ -149,14 +162,27 @@ select option{background:var(--surface)}
   </div>
   <div class="card">
     <div class="card-h"><div class="t"><div class="dot" style="background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)"><svg class="icon" viewBox="0 0 24 24"><path d="M4 10h16v2H4zm0-4h16v2H4zm0 8h16v2H4zm0 4h16v2H4z"/></svg></div>مخارج ثابت</div><span class="sum" id="fixedSum"></span></div>
-    <div class="form"><input type="text" id="fixedExpenseName" placeholder="عنوان خرج"><input type="text" inputmode="numeric" class="amt" id="fixedExpenseAmount" placeholder="مبلغ (تومان)"><button class="btn" onclick="addFixedExpense()">ثبت</button></div>
+    <div class="exp-tags" id="fixedTags" data-target="fixedExpenseName"></div>
+    <div class="form form-exp">
+      <input type="text" id="fixedExpenseName" list="expenseNameSuggestions" placeholder="عنوان خرج" autocomplete="off">
+      <input type="text" id="fixedExpenseNote" placeholder="توضیح (اختیاری)">
+      <input type="text" inputmode="numeric" class="amt" id="fixedExpenseAmount" placeholder="مبلغ (تومان)">
+      <button class="btn" onclick="addFixedExpense()">ثبت</button>
+    </div>
     <ul class="list" id="fixedExpenseList"></ul>
   </div>
   <div class="card span">
     <div class="card-h"><div class="t"><div class="dot" style="background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)"><svg class="icon" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></div><span id="weeklyCardTitle">مخارج متغیر</span></div><span class="sum" id="weekTotalDisplay"></span></div>
     <div class="weeks" id="weeksBar"></div>
-    <div class="form"><input type="text" id="weeklyExpenseName" placeholder="عنوان خرج"><input type="text" inputmode="numeric" class="amt" id="weeklyExpenseAmount" placeholder="مبلغ (تومان)"><button class="btn" onclick="addWeeklyExpense()">ثبت</button></div>
+    <div class="exp-tags" id="weeklyTags" data-target="weeklyExpenseName"></div>
+    <div class="form form-exp">
+      <input type="text" id="weeklyExpenseName" list="expenseNameSuggestions" placeholder="عنوان خرج" autocomplete="off">
+      <input type="text" id="weeklyExpenseNote" placeholder="توضیح (اختیاری)">
+      <input type="text" inputmode="numeric" class="amt" id="weeklyExpenseAmount" placeholder="مبلغ (تومان)">
+      <button class="btn" onclick="addWeeklyExpense()">ثبت</button>
+    </div>
     <ul class="list" id="weeklyExpenseList"></ul>
+    <datalist id="expenseNameSuggestions"></datalist>
   </div>
   <div class="card span">
     <div class="card-h"><div class="t"><div class="dot" style="background:color-mix(in srgb,var(--a2) 15%,transparent);color:var(--a2)"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2L4 9l8 13 8-13-8-7zm0 3.2L16.5 9h-9L12 5.2z"/></svg></div>ثبت پس‌انداز و سرمایه‌گذاری</div><span class="sum" id="savMonthSum"></span></div>
@@ -819,10 +845,37 @@ function confirmYear(){
 function renderMonths(){const s=$('monthSelect');s.innerHTML='';months.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.textContent=m;if(i===currentMonth)o.selected=true;s.appendChild(o)})}
 function changeMonth(v){currentMonth=parseInt(v);render()}
 function renderWeeks(){const c=$('weeksBar');c.innerHTML='';[1,2,3,4].forEach(w=>{const b=document.createElement('button');b.className='wk'+(w===currentWeek?' active':'');b.textContent='هفته '+fmt(w);b.onclick=()=>{currentWeek=w;renderWeeks();render()};c.appendChild(b)})}
-function add(list,nameId,amtId,withDate){const n=$(nameId).value.trim(),a=parseAmt($(amtId).value);if(n&&a){const item={name:n,amount:a};if(withDate)item.date=Date.now();list.push(item);$(nameId).value='';$(amtId).value='';saveData()}}
+
+function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/'/g,'&#39;')}
+function collectExpenseTags(){
+  const counts=new Map();
+  const bump=n=>{const k=keyOf(n);if(!k)return;counts.set(k,(counts.get(k)||0)+1)};
+  Object.values(data.records||{}).forEach(rec=>{
+    (rec.fixedExpenses||[]).forEach(i=>bump(i.name));
+    const weeks=rec.weeklyExpenses||{};
+    Object.keys(weeks).forEach(w=>(weeks[w]||[]).forEach(i=>bump(i.name)));
+  });
+  return [...counts.entries()].sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0]),'fa')).map(([name,count])=>({name,count}));
+}
+function renderExpenseTags(){
+  const tags=collectExpenseTags().slice(0,24);
+  const chipHtml=tags.map(t=>`<button type="button" class="exp-tag" data-name="${escAttr(t.name)}" title="${escAttr(t.name)}">${esc(t.name)}</button>`).join('');
+  ['fixedTags','weeklyTags'].forEach(id=>{
+    const el=$(id);if(!el)return;
+    el.innerHTML=chipHtml;
+    const target=el.getAttribute('data-target');
+    el.querySelectorAll('.exp-tag').forEach(btn=>{
+      btn.onclick=()=>{const inp=$(target);if(inp){inp.value=btn.getAttribute('data-name')||'';inp.focus()}};
+    });
+  });
+  const dl=$('expenseNameSuggestions');
+  if(dl) dl.innerHTML=tags.map(t=>`<option value="${escAttr(t.name)}"></option>`).join('');
+}
+
+function add(list,nameId,amtId,withDate,noteId){const n=$(nameId).value.trim(),a=parseAmt($(amtId).value);if(n&&a){const item={name:n,amount:a};if(withDate)item.date=Date.now();if(noteId){const noteEl=$(noteId);const note=noteEl?noteEl.value.trim():'';if(note)item.note=note;if(noteEl)noteEl.value=''}list.push(item);$(nameId).value='';$(amtId).value='';saveData()}}
 function addIncome(){add(monthData().incomes,'incomeName','incomeAmount')}
-function addFixedExpense(){add(monthData().fixedExpenses,'fixedExpenseName','fixedExpenseAmount')}
-function addWeeklyExpense(){add(monthData().weeklyExpenses[currentWeek],'weeklyExpenseName','weeklyExpenseAmount',true)}
+function addFixedExpense(){add(monthData().fixedExpenses,'fixedExpenseName','fixedExpenseAmount',false,'fixedExpenseNote')}
+function addWeeklyExpense(){add(monthData().weeklyExpenses[currentWeek],'weeklyExpenseName','weeklyExpenseAmount',true,'weeklyExpenseNote')}
 function deleteItem(type,i,w){const m=monthData();if(type==='income')m.incomes.splice(i,1);if(type==='fixed')m.fixedExpenses.splice(i,1);if(type==='weekly')m.weeklyExpenses[w].splice(i,1);if(type==='saving')m.savings.splice(i,1);saveData()}
 const keyOf=n=>String(n).trim().replace(/\s+/g,' ');
 function colorOf(name){const k=keyOf(name);if(!data.colors)data.colors={};
@@ -830,8 +883,9 @@ function colorOf(name){const k=keyOf(name);if(!data.colors)data.colors={};
  const i=data.colors[k];return `hsl(${Math.round((i*137.508)%360)},${i%2?55:65}%,${i%3?66:62}%)`}
 function merge(arr){const m=new Map();arr.forEach(i=>{const k=keyOf(i.name),e=m.get(k);if(e)e.amount+=i.amount;else m.set(k,{name:k,amount:i.amount})});return[...m.values()].sort((a,b)=>b.amount-a.amount)}
 function row(cls,it,del){
+  const note=it.note?`<span class="note-sub">${esc(it.note)}</span>`:'';
   const dateMeta=it.date?`<span class="meta">${esc(formatJalaliDate(it.date))}</span>`:'';
-  return `<li class="row ${cls}" style="border-right-color:${colorOf(it.name)}"><span class="n">${esc(it.name)}</span><span class="a">${fmt(it.amount)} تومان${del?`<button class="del" onclick="${del}">&times;</button>`:''}</span>${dateMeta}</li>`
+  return `<li class="row ${cls}" style="border-right-color:${colorOf(it.name)}"><span class="n"><span class="sav-main">${esc(it.name)}</span>${note}</span><span class="a">${fmt(it.amount)} تومان${del?`<button class="del" onclick="${del}">&times;</button>`:''}</span>${dateMeta}</li>`
 }
 function fill(id,items,cls,delFn,msg){$(id).innerHTML=items.length?items.map((it,i)=>row(cls,it,delFn?delFn(i):null)).join(''):`<li class="empty">${msg}</li>`}
 const sum=a=>a.reduce((s,i)=>s+i.amount,0);
@@ -1067,6 +1121,7 @@ function render(){
  fill('incomeList',m.incomes,'income',i=>`deleteItem('income',${i})`,'هنوز درآمدی ثبت نشده است');
  fill('fixedExpenseList',m.fixedExpenses,'expense',i=>`deleteItem('fixed',${i})`,'هنوز خرج ثابتی ثبت نشده است');
  fill('weeklyExpenseList',wk,'expense',i=>`deleteItem('weekly',${i},${currentWeek})`,'برای این هفته خرجی ثبت نشده است');
+ renderExpenseTags();
  $('incomeSum').textContent=fmt(sum(m.incomes))+' تومان';$('fixedSum').textContent=fmt(sum(m.fixedExpenses))+' تومان';$('weekTotalDisplay').textContent=fmt(sum(wk))+' تومان';
  const allW=[].concat(...Object.values(m.weeklyExpenses));
  const tI=sum(m.incomes),tF=sum(m.fixedExpenses),tW=sum(allW),tE=tF+tW,bal=tI-tE;
